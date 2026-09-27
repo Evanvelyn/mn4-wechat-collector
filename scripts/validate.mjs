@@ -24,6 +24,7 @@ const scripts = [
   'src/lib/search-parser.js',
   'src/lib/scoring.js',
   'src/lib/offline-html.js',
+  'src/lib/download-preferences.js',
 ];
 
 for (const script of scripts) {

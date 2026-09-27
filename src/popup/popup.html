@@ -47,9 +47,25 @@
           <h2 id="export-heading">保存当前公众号文章</h2>
         </div>
         <p id="article-page-hint">打开一篇公众号文章后，可完整保存图片或打印为 PDF。</p>
+        <form id="download-settings" class="download-settings">
+          <h3>离线 HTML 保存位置</h3>
+          <label for="download-mode">默认方式</label>
+          <select id="download-mode" name="downloadMode">
+            <option value="ask">每次手动选择位置</option>
+            <option value="browser">使用浏览器默认下载位置</option>
+            <option value="subfolder">保存到下载目录的子文件夹</option>
+          </select>
+          <label id="download-folder-row" for="download-folder" hidden>
+            子文件夹
+            <input id="download-folder" name="downloadFolder" type="text" maxlength="240" placeholder="例如：MarginNote/微信文章">
+          </label>
+          <p class="settings-help">PDF 的保存位置仍需在浏览器打印对话框中选择。</p>
+          <button class="secondary settings-submit" type="submit">保存设置</button>
+        </form>
         <div class="button-group">
-          <button id="save-html" class="secondary" type="button" disabled>保存离线 HTML</button>
-          <button id="print-pdf" type="button" disabled>打印为 PDF</button>
+          <button id="save-html" class="secondary" type="button" disabled>按设置保存 HTML</button>
+          <button id="save-html-as" class="secondary" type="button" disabled>HTML 另存为…</button>
+          <button id="print-pdf" class="wide" type="button" disabled>打印为 PDF</button>
         </div>
       </section>
     </main>

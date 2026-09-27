@@ -1,6 +1,7 @@
 import { parseSogouResults } from '../lib/search-parser.js';
 import { rankArticles } from '../lib/scoring.js';
 import { buildOfflineHtml, sanitizeFilename } from '../lib/offline-html.js';
+import { buildDownloadTarget, normalizeDownloadPreference } from '../lib/download-preferences.js';
 
 const elements = {
   form: document.querySelector('#search-form'),
@@ -12,16 +13,23 @@ const elements = {
   results: document.querySelector('#results'),
   openSelected: document.querySelector('#open-selected'),
   articlePageHint: document.querySelector('#article-page-hint'),
+  downloadSettings: document.querySelector('#download-settings'),
+  downloadMode: document.querySelector('#download-mode'),
+  downloadFolderRow: document.querySelector('#download-folder-row'),
+  downloadFolder: document.querySelector('#download-folder'),
   saveHtml: document.querySelector('#save-html'),
+  saveHtmlAs: document.querySelector('#save-html-as'),
   printPdf: document.querySelector('#print-pdf'),
 };
 
 let currentResults = [];
+let downloadPreference = normalizeDownloadPreference();
 const MAX_IMAGE_COUNT = 200;
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const MAX_TOTAL_IMAGE_BYTES = 150 * 1024 * 1024;
 
 void restoreLastQuery();
+void restoreDownloadPreference();
 void updateArticleControls();
 
 elements.form.addEventListener('submit', async (event) => {
@@ -67,7 +75,10 @@ elements.openSelected.addEventListener('click', async () => {
   setStatus(`已在后台打开 ${selectedIndexes.length} 篇文章。`);
 });
 
-elements.saveHtml.addEventListener('click', saveCurrentArticle);
+elements.downloadMode.addEventListener('change', updateDownloadFolderVisibility);
+elements.downloadSettings.addEventListener('submit', saveDownloadPreference);
+elements.saveHtml.addEventListener('click', () => saveCurrentArticle());
+elements.saveHtmlAs.addEventListener('click', () => saveCurrentArticle({ forcePrompt: true }));
 elements.printPdf.addEventListener('click', printCurrentArticle);
 
 function renderResults(results) {
@@ -148,17 +159,58 @@ async function restoreLastQuery() {
   elements.query.value = lastQuery;
 }
 
+async function restoreDownloadPreference() {
+  const stored = await chrome.storage.local.get('downloadPreference');
+  downloadPreference = normalizeDownloadPreference(stored.downloadPreference);
+  elements.downloadMode.value = downloadPreference.mode;
+  elements.downloadFolder.value = downloadPreference.folder;
+  updateDownloadFolderVisibility();
+}
+
+async function saveDownloadPreference(event) {
+  event.preventDefault();
+  const requested = {
+    mode: elements.downloadMode.value,
+    folder: elements.downloadFolder.value,
+  };
+  const normalized = normalizeDownloadPreference(requested);
+
+  if (requested.mode === 'subfolder' && normalized.mode !== 'subfolder') {
+    setStatus('请输入下载目录内的相对子文件夹，例如 MarginNote/微信文章。', 'error');
+    elements.downloadFolder.focus();
+    return;
+  }
+
+  downloadPreference = normalized;
+  elements.downloadFolder.value = normalized.folder;
+  await chrome.storage.local.set({ downloadPreference });
+  setStatus(downloadPreferenceDescription(normalized));
+}
+
+function updateDownloadFolderVisibility() {
+  const usesSubfolder = elements.downloadMode.value === 'subfolder';
+  elements.downloadFolderRow.hidden = !usesSubfolder;
+  elements.downloadFolder.disabled = !usesSubfolder;
+}
+
+function downloadPreferenceDescription(preference) {
+  if (preference.mode === 'browser') return '保存设置已更新：离线 HTML 将使用浏览器默认下载位置。';
+  if (preference.mode === 'subfolder') return `保存设置已更新：离线 HTML 将保存到“下载/${preference.folder}”。`;
+  return '保存设置已更新：每次保存离线 HTML 时手动选择位置。';
+}
+
 async function updateArticleControls() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const isArticle = /^https:\/\/mp\.weixin\.qq\.com\/s(?:\/|\?)/.test(tab?.url || '');
   elements.saveHtml.disabled = !isArticle;
+  elements.saveHtmlAs.disabled = !isArticle;
   elements.printPdf.disabled = !isArticle;
   elements.articlePageHint.textContent = isArticle
     ? '已识别当前公众号文章。离线 HTML 会把正文图片全部内嵌。'
     : '请先打开一篇 mp.weixin.qq.com 公众号文章。';
 }
 
-async function saveCurrentArticle() {
+async function saveCurrentArticle(options = {}) {
   setExportBusy(true, '正在读取正文并保存图片…');
 
   try {
@@ -173,14 +225,15 @@ async function saveCurrentArticle() {
     const html = buildOfflineHtml(processed.article);
     const blobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
     const filename = `${sanitizeFilename(processed.article.title)}.html`;
+    const target = buildDownloadTarget(filename, downloadPreference, options);
 
-    await chrome.downloads.download({ url: blobUrl, filename, saveAs: true });
+    await chrome.downloads.download({ url: blobUrl, ...target });
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
 
     const suffix = processed.failedImages
       ? `；${processed.failedImages} 张图片下载失败，已在正文中标注`
       : '，图片已全部内嵌';
-    setStatus(`已生成 ${filename}${suffix}。`);
+    setStatus(`已生成 ${target.filename}${suffix}。`);
   } catch (error) {
     setStatus(error.message, 'error');
   } finally {
@@ -283,6 +336,7 @@ function blobToDataUrl(blob) {
 
 function setExportBusy(isBusy, message = '') {
   elements.saveHtml.disabled = isBusy;
+  elements.saveHtmlAs.disabled = isBusy;
   elements.printPdf.disabled = isBusy;
   if (message) setStatus(message, 'loading');
   if (!isBusy) void updateArticleControls();
