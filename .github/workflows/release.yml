@@ -2,18 +2,14 @@ name: Test and publish release
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "v*"
-    paths:
-      - ".github/workflows/release.yml"
   workflow_dispatch:
     inputs:
       tag:
         description: Existing Git tag to publish
         required: true
-        default: v1.0.0
+        default: v1.1.0
 
 permissions:
   contents: write
@@ -22,7 +18,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     steps:
       - name: Check out the release tag
         uses: actions/checkout@v4
@@ -50,40 +46,23 @@ jobs:
       - name: Build release archive
         run: npm run package
 
-      - name: Write release notes
+      - name: Select release notes
         run: |
-          printf '%s\n' \
-            '这是「微信文章采集器 · MN4」的首个公开版本。' \
-            '' \
-            '## 核心功能' \
-            '' \
-            '- 按关键词检索微信公众号文章，展示标题、摘要、账号与日期' \
-            '- 按关键词相关性、可信技术来源和时效性进行本地排序' \
-            '- 支持批量勾选和打开候选文章' \
-            '- 强制加载公众号懒加载图片后打印为可搜索 PDF' \
-            '- 支持将图片内嵌为 Base64 的离线 HTML 归档' \
-            '- 明确提示验证码、空结果与图片加载失败' \
-            '' \
-            '## MarginNote 4 工作流' \
-            '' \
-            '搜索 → 选择文章 → 加载完整图片 → 另存为 PDF → 导入 MarginNote 4。这个流程用于解决直接通过网页链接或 HTML 导入时可能出现的图片缺失问题。' \
-            '' \
-            '## 已知限制' \
-            '' \
-            '- 不提供或猜测真实点赞、在看、阅读量' \
-            '- 搜狗微信搜索可能触发限频或验证码' \
-            '- 当前版本不直接选择 MarginNote 内部文件夹' \
-            '' \
-            '下载下方 ZIP 并解压，然后在 Chrome/Edge 的扩展程序页面开启开发者模式，选择「加载已解压的扩展程序」。' \
-            '' \
-            '如果这个项目对你有帮助，欢迎 Star。' \
-            > release-notes.md
+          notes_path="docs/release-notes/$RELEASE_TAG.md"
+          if [ -f "$notes_path" ]; then
+            cp "$notes_path" release-notes.md
+          else
+            printf '完整更新内容请查看 CHANGELOG.md。\n' > release-notes.md
+          fi
 
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --title "MN4 WeChat Collector $RELEASE_TAG" \
+              --notes-file release-notes.md
             gh release upload "$RELEASE_TAG" dist/*.zip --clobber
           else
             gh release create "$RELEASE_TAG" dist/*.zip \

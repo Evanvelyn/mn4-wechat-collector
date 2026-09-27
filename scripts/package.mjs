@@ -1,10 +1,11 @@
-import { mkdir, rm } from 'node:fs/promises';
+import { mkdir, readFile, rm } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 
-const output = 'dist/mn4-wechat-collector-v1.0.0.zip';
+const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
+const output = `dist/mn4-wechat-collector-v${packageJson.version}.zip`;
 const files = [
   'manifest.json',
   'src',

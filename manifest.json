@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "微信文章采集器 · MN4",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "搜索高质量公众号文章，完整保存图文并导入 MarginNote 4。",
   "permissions": [
     "activeTab",
