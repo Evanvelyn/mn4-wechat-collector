@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信文章采集器</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <p class="eyebrow">MARGINNOTE 4 COLLECTION</p>
+        <h1>微信文章采集器</h1>
+        <p class="lede">找文章、挑选、完整保存图文。</p>
+      </header>
+
+      <section aria-labelledby="search-heading">
+        <h2 id="search-heading" class="visually-hidden">搜索公众号文章</h2>
+        <form id="search-form" class="search-form">
+          <label for="query">搜索关键词</label>
+          <div class="search-row">
+            <input id="query" name="query" type="search" placeholder="例如：Agent 评测" autocomplete="off" maxlength="80" required>
+            <button type="submit">搜索</button>
+          </div>
+        </form>
+      </section>
+
+      <div id="status" class="status" role="status" aria-live="polite">
+        输入关键词开始搜索。公众号来源和内容相关性会用于排序。
+      </div>
+
+      <p id="manual-search" class="manual-search" hidden>
+        <a id="manual-search-link" href="#">在搜狗微信中手动搜索</a>
+      </p>
+
+      <section id="results-section" hidden aria-labelledby="results-heading">
+        <div class="section-heading">
+          <h2 id="results-heading">搜索结果</h2>
+          <button id="open-selected" class="secondary" type="button" disabled>打开已选</button>
+        </div>
+        <ol id="results" class="result-list" aria-label="公众号文章搜索结果"></ol>
+      </section>
+
+      <section class="export-panel" aria-labelledby="export-heading">
+        <div>
+          <p class="eyebrow">CURRENT ARTICLE</p>
+          <h2 id="export-heading">保存当前公众号文章</h2>
+        </div>
+        <p id="article-page-hint">打开一篇公众号文章后，可完整保存图片或打印为 PDF。</p>
+        <div class="button-group">
+          <button id="save-html" class="secondary" type="button" disabled>保存离线 HTML</button>
+          <button id="print-pdf" type="button" disabled>打印为 PDF</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

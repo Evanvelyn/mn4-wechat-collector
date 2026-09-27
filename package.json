@@ -1,0 +1,16 @@
+{
+  "name": "mn4-wechat-collector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Evanvelyn/mn4-wechat-collector.git"
+  },
+  "homepage": "https://github.com/Evanvelyn/mn4-wechat-collector#readme",
+  "scripts": {
+    "test": "node --test",
+    "validate": "node scripts/validate.mjs",
+    "package": "node scripts/package.mjs"
+  }
+}

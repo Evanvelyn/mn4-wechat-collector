@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "微信文章采集器 · MN4",
+  "version": "1.0.0",
+  "description": "搜索高质量公众号文章，完整保存图文并导入 MarginNote 4。",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://weixin.sogou.com/*",
+    "https://mp.weixin.qq.com/*",
+    "https://mmbiz.qpic.cn/*",
+    "https://mmbiz.qlogo.cn/*"
+  ],
+  "action": {
+    "default_title": "微信文章采集器",
+    "default_popup": "src/popup/popup.html"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  }
+}
